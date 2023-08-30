@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: NAT Gateway for VPC
+Parameters:
+  ExportVPCStackName:
+    Type: String
+    Description: Export Vpc Stack
+
+Resources:
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags: 
+        - Key: name
+          value: PrivateRouteTable1
+      VpcId: 
+        Fn::ImportValue: !Sub ${ExportVPCStackName}-VPC
+ 
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags: 
+        - Key: name
+          value: PrivateRouteTable2
+      VpcId: 
+         Fn::ImportValue: !Sub ${ExportVPCStackName}-VPC
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: 
+         Fn::ImportValue: !Sub ${ExportVPCStackName}-PrivateSubnet1
+ 
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId:
+         Fn::ImportValue: !Sub ${ExportVPCStackName}-PrivateSubnet2
+
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId:
+         Fn::ImportValue: !Sub ${ExportVPCStackName}-PrivateSubnet3
+
+  PrivateSubnet4RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId:
+         Fn::ImportValue: !Sub ${ExportVPCStackName}-PrivateSubnet4
+
+  ElasticIP1:
+    Type: AWS::EC2::EIP
+    Properties: 
+      Domain: VPC
+      Tags: 
+        - Key: name
+          Value: EIP1
+
+  ElasticIP2:
+    Type: AWS::EC2::EIP
+    Properties: 
+      Domain: VPC
+      Tags: 
+        - Key: name
+          Value: EIP2
+
+  NATGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt ElasticIP1.AllocationId
+      SubnetId:
+        Fn::ImportValue: !Sub ${ExportVPCStackName}-PublicSubnet1
+      Tags: 
+        - Key: name
+          Value: NATGateway1
+
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt ElasticIP2.AllocationId
+      SubnetId:
+        Fn::ImportValue: !Sub ${ExportVPCStackName}-PublicSubnet2
+      Tags: 
+        - Key: name
+          Value: NATGateway2
+  
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+      RouteTableId: !Ref PrivateRouteTable2
