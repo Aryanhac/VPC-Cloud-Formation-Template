@@ -11,7 +11,7 @@ Resources:
     Properties: 
       Tags: 
         - Key: name
-          value: PrivateRouteTable1
+          Value: PrivateRouteTable1
       VpcId: 
         Fn::ImportValue: !Sub ${ExportVPCStackName}-VPC
  
@@ -20,7 +20,7 @@ Resources:
     Properties: 
       Tags: 
         - Key: name
-          value: PrivateRouteTable2
+          Value: PrivateRouteTable2
       VpcId: 
          Fn::ImportValue: !Sub ${ExportVPCStackName}-VPC
 

@@ -121,7 +121,7 @@ Resources:
   PublicSubnet2:
       Type: AWS::EC2::Subnet
       Properties: 
-        AvailabilityZone: !Select [0, !GetAZs '']
+        AvailabilityZone: !Select [1, !GetAZs '']
         CidrBlock: !Ref VPCIPRANGEPUBLICSUBNET2
         MapPublicIpOnLaunch: true
         Tags:
