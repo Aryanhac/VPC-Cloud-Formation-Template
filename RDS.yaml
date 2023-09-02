@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: RDS Cloud Formation Template
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "Export VPC Stack Name"
+        Parameters: 
+          - ExportVPCStackName
+      - 
+        Label: 
+          default: "Database Parameters  "
+        Parameters: 
+          - DatabaseIdentifierName
+          - DatabaseName
+          - DatabaseUserName
+          - DatabasePassword
+          - DatabaseBackupRetentionPeriod
+          - DatabaseAllocatedStorage
+          - DatabaseInstanceClass
+          - MultiAZDatabase
+          - DatabaseEngine
+          - DatabaseEngineVersion
+  
+Parameters:
+  ExportVPCStackName:
+    Type: String
+    Description: Export VPC Stack Name
+
+  DatabaseIdentifierName:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: first character should not be alphabetic
+    Description: Instance Identifier Name
+    MaxLength: 60
+    MinLength: 1
+    Type: String
+  
+  DatabaseName:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: first character should not be alphabetic
+    Description: Database Name
+    Default: mysqlDB
+    MaxLength: 60
+    MinLength: 4
+    Type: String
+  
+  DatabaseUserName:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: first character should not be alphabetic
+    Description: Database Username
+    Default: admin
+    MaxLength: 20
+    MinLength: 4
+    Type: String
+  
+  DatabasePassword:
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: characters should be alphanumeric
+    Description: Database Username
+    Default: admin
+    NoEcho: true
+    MaxLength: 20
+    MinLength: 4
+    Type: String
+  
+  DatabaseBackupRetentionPeriod:
+    ConstraintDescription: Database backup retention period must be between 0 to 35
+    Description: The number of days for which automatic DB snapshots are retained
+    Default: 0
+    MaxValue: 35
+    MinValue: 0
+    Type: Number
+  
+  DatabaseAllocatedStorage:
+    ConstraintDescription: Must be between 4 and 1024 Gb
+    Description: Size of the Database
+    Default: 4
+    MaxValue: 1024
+    MinValue: 4
+    Type: Number
+  
+  DatabaseInstanceClass:
+    AllowedValues:
+      - db.t1.micro
+      - db.t2.micro
+      - db.m1.small
+      - db.m1.medium
+      - db.m1.large
+    ConstraintDescription: Must select a valid database instance type
+    Description: Database Instance Type
+    Default: db.t2.micro
+    Type: String
+
+  MultiAZDatabase:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be either true or false
+    Default: false
+    Description: Creates a Multi-AZ Database Amazon RDS
+    Type: String
+
+  DatabaseEngine:
+    Default: MySQL
+    Description: Database Type
+    Type: String
+
+  DatabaseEngineVersion:
+    Default: 5.7.31
+    Description: Version of the Database
+    Type: String
+     
+
+Resources:
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - Fn::ImportValue: !Sub ${ExportVpcStackName}-PrivateSubnet3
+        - Fn::ImportValue: !Sub ${ExportVpcStackName}-PrivateSubnet4
+      Tags:
+        - Key: Name
+          Value: Subnet of Database
+
+  RelationalDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties: 
+      AllocatedStorage: !Ref DatabaseAllocatedStorage
+      DBName: !Ref DatabaseName
+      AvailabilityZone: !Select [0, !GetAZs '']
+      BackupRetentionPeriod: !Ref DatabaseBackupRetentionPeriod
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DBInstanceIdentifier: !Ref DatabaseIdentifierName
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      Engine: !Ref DatabaseEngine
+      EngineVersion: !Ref DatabaseEngineVersion
+      MasterUsername: !Ref DatabaseUserName
+      MasterUserPassword: !Ref DatabasePassword
+      MultiAZ: !Ref MultiAZDatabase
+      VPCSecurityGroups: 
+        - Fn::ImportValue: !Sub ${ExportVpcStackName}-DatabaseSecurityGroup
